@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>강호 명부</title>
+<link rel="icon" href="data:,">
+<meta name="description" content="삼류강호의 보통·어려움·아수라 길 점수 랭킹">
+<style>
+@font-face { font-family: G11; src: url(fonts/Galmuri11.woff2) format('woff2'); font-display: swap; }
+@font-face { font-family: G11B; src: url(fonts/Galmuri11-Bold.woff2) format('woff2'); font-display: swap; }
+@font-face { font-family: G9; src: url(fonts/Galmuri9.woff2) format('woff2'); font-display: swap; }
+/* 게임과 같은 RM2003 세계 하나만 쓴다(밝은 판 없음) */
+:root { color-scheme: dark; --bg: #07050b; --ink: #ffffff; --dim: #bcc4e8; --gold: #ffd860; --silver: #dde4f4; --bronze: #eeb080; --red: #ff8090; --line: #f4ecd8; --edge: #8a98ec; --rule: rgba(190,200,245,.28); --hover: rgba(255,240,200,.12); --deep: #0c1030; --win: linear-gradient(180deg, #2c3a9c 0, #1b2470 180px, #121850 100%); --u: 12px; }
+@media (min-width: 760px) { :root { --u: 14px; } }
+* { box-sizing: border-box; }
+html { background: var(--bg); scrollbar-color: #4256c8 #0c1030; -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--u)/1.5 G11, 'Malgun Gothic', sans-serif; -webkit-font-smoothing: none; padding-bottom: max(24px, env(safe-area-inset-bottom, 0px)); }
+::selection { background: var(--gold); color: #17143a; }
+::-webkit-scrollbar { width: 10px; height: 10px; } ::-webkit-scrollbar-track { background: var(--deep); } ::-webkit-scrollbar-thumb { background: #4256c8; border: 1px solid var(--line); }
+a { color: var(--gold); text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
+.wrap { width: min(100%, 960px); margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.win { position: relative; background: repeating-conic-gradient(rgba(255,255,255,.03) 0 25%, transparent 0 50%) 0 0 / 2px 2px, var(--win); border: 2px solid var(--line); border-radius: 3px; outline: 1px solid #08081c; box-shadow: inset 0 0 0 1px var(--edge), 2px 2px 0 1px rgba(0,0,8,.5); animation: winOpen .18s steps(4) both; }
+@keyframes winOpen { from { transform: scaleY(.06); } to { transform: scaleY(1); } }
+@media (prefers-reduced-motion: reduce) { .win { animation: none; } }
+
+/* 머리: 타이틀 그림을 도트 그대로 정수배 */
+.hero { position: relative; overflow: hidden; background: #1a1630 url(assets/title.png) 22% 34% / 640px 480px no-repeat; image-rendering: pixelated; border-bottom: 2px solid var(--line); }
+@media (min-width: 760px) { .hero { background-size: 960px 720px; background-position: 50% 30%; } }
+.hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(7,5,11,0) 30%, rgba(7,5,11,.72) 100%), linear-gradient(90deg, var(--bg) calc(50% - 480px), transparent calc(50% - 400px), transparent calc(50% + 400px), var(--bg) calc(50% + 480px)); } /* 그림보다 넓은 화면: 3배 도트를 유지하고 양옆을 어둠으로 녹인다 */
+.hero .wrap { position: relative; z-index: 1; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 16px; min-height: 172px; padding-top: 16px; padding-bottom: 12px; }
+@media (min-width: 760px) { .hero .wrap { min-height: 240px; } }
+h1 { margin: 0; font: 48px/1 G11B, sans-serif; color: var(--gold); text-shadow: 2px 2px 0 #1a1020, -1px -1px 0 #1a1020, 1px -1px 0 #1a1020, -1px 1px 0 #1a1020; }
+.hero p { margin: 6px 0 0; text-shadow: 1px 1px 0 #000; }
+.go { display: inline-block; padding: 4px 12px; font-family: G11B; color: #17143a; background: var(--gold); border: 2px solid var(--line); outline: 1px solid #08081c; text-decoration: none; white-space: nowrap; }
+.go:hover { background: #ffe68c; }
+
+/* 길 고르기 */
+.tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 12px 0 0; }
+.tab { padding: 6px 4px 5px; text-align: center; background: var(--deep); border: 2px solid var(--rule); border-bottom: 0; color: var(--dim); }
+.tab b { display: block; font: inherit; font-family: G11B; font-size: calc(var(--u) + 2px); color: inherit; }
+.tab small { font: 10px/1.2 G9; }
+.tab[aria-selected="true"] { background: #2c3a9c; border-color: var(--line); color: var(--ink); }
+.tab[aria-selected="true"] b { color: var(--gold); }
+.tab:hover { color: var(--ink); }
+main.win { padding: 10px; animation: none; border-radius: 0 0 3px 3px; }
+.ddesc { margin: 0 0 8px; color: var(--dim); max-width: 65ch; }
+
+/* 출신 고르기 */
+.org { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 3px; }
+.org button { display: grid; justify-items: center; gap: 1px; padding: 3px 0 2px; border: 1px solid transparent; color: var(--dim); }
+.org button:hover { background: var(--hover); color: var(--ink); }
+.org button[aria-pressed="true"] { border-color: var(--gold); background: var(--deep); color: var(--gold); }
+.org i { display: block; width: 26px; height: 26px; background: #0c1030 0 0 / 50px 96px no-repeat; background-position: center -2px; image-rendering: pixelated; border: 1px solid var(--rule); font-style: normal; text-align: center; line-height: 24px; }
+.org span { font: 10px/12px G9; white-space: nowrap; }
+.sum { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; margin: 8px 0 6px; }
+.sum b { color: var(--gold); font-weight: normal; }
+.chk { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+.chk input { appearance: none; width: 12px; height: 12px; margin: 0; background: var(--deep); border: 1px solid var(--line); cursor: pointer; }
+.chk input:checked { background: var(--gold); box-shadow: inset 0 0 0 2px var(--deep); }
+
+/* 명부 줄: 넓으면 표, 좁으면 두 줄 */
+.cols, .r { display: grid; align-items: center; column-gap: 8px; grid-template-columns: 2.4em 28px minmax(0, 1fr) 5.4em 7.4em 7.4em 2.6em 2.6em 3em 3em; }
+.cols { display: none; padding: 2px 6px; color: var(--dim); border-bottom: 1px solid var(--rule); }
+.cols span { font: 10px/14px G9; }
+.cols .n, .r .n { text-align: right; }
+.list { list-style: none; margin: 0; padding: 0; }
+.row { border-bottom: 1px solid var(--rule); }
+.row:last-child { border-bottom: 0; }
+.r { width: 100%; padding: 5px 6px; grid-template-columns: 2.2em 28px minmax(0, 1fr) auto; grid-template-areas: 'rk pt nm sc' 'rk pt meta meta'; row-gap: 1px; }
+.r:hover { background: var(--hover); }
+.r[aria-expanded="true"] { background: var(--deep); }
+.rk { grid-area: rk; font-family: G11B; color: var(--dim); text-align: right; font-variant-numeric: tabular-nums; }
+.row:nth-child(1) .rk { color: var(--gold); } .row:nth-child(2) .rk { color: var(--silver); } .row:nth-child(3) .rk { color: var(--bronze); }
+.pt { grid-area: pt; align-self: start; width: 28px; height: 28px; background: #0c1030 center -2px / 50px 96px no-repeat; image-rendering: pixelated; border: 1px solid var(--rule); }
+.row.first .pt { width: 50px; height: 96px; background-position: 0 0; border-color: var(--gold); }
+.row.first .r { grid-template-columns: 2.2em 50px minmax(0, 1fr) auto; }
+.nm { grid-area: nm; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: G11B; }
+.row.me .nm { color: var(--gold); }
+.sc { grid-area: sc; font-family: G11B; color: var(--gold); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.meta { grid-area: meta; display: flex; flex-wrap: wrap; gap: 0 8px; color: var(--dim); font: 10px/13px G9; min-width: 0; }
+.meta .cl { color: var(--gold); }
+.meta .died { color: var(--red); }
+.meta i { font-style: normal; }
+@media (min-width: 760px) {
+  .cols { display: grid; }
+  .r { grid-template-columns: 2.4em 28px minmax(0, 1fr) 5.4em 7.4em 7.4em 2.6em 2.6em 3em 3em; grid-template-areas: none; }
+  .row.first .r { grid-template-columns: 2.4em 28px minmax(0, 1fr) 5.4em 7.4em 7.4em 2.6em 2.6em 3em 3em; }
+  .row.first .pt { width: 28px; height: 28px; background-position: center -2px; }
+  .rk, .pt, .nm, .sc { grid-area: auto; }
+  .meta { display: contents; font: inherit; color: var(--ink); }
+  .meta > span { font: 12px/16px G11; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .meta i { display: none; }
+  .meta .dt { color: var(--dim); }
+}
+
+/* 펼친 내용 */
+.d { display: grid; gap: 10px 20px; padding: 8px 8px 12px; background: var(--deep); }
+@media (min-width: 760px) { .d { grid-template-columns: minmax(240px, 1fr) 2fr; } }
+.d h3 { margin: 0 0 3px; font: inherit; font-family: G11B; color: var(--gold); }
+.d .sec + .sec { margin-top: 8px; }
+.pts { width: 100%; border-collapse: collapse; }
+.pts td { padding: 1px 0; vertical-align: top; }
+.pts td:last-child { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pts small { color: var(--dim); font: 10px/13px G9; }
+.pts .tot td { border-top: 1px solid var(--rule); padding-top: 3px; font-family: G11B; color: var(--gold); }
+.chips { display: flex; flex-wrap: wrap; gap: 2px 8px; margin: 0; padding: 0; list-style: none; }
+.chips li { white-space: nowrap; }
+.chips .t { display: inline-block; width: 6px; height: 6px; margin-right: 3px; vertical-align: 1px; }
+.chips em { font-style: normal; color: var(--gold); }
+
+.state { padding: 24px 8px; text-align: center; }
+.state p { margin: 0 0 8px; }
+.btn2 { display: inline-block; padding: 2px 10px; border: 1px solid var(--line); background: #202858; }
+.btn2:hover { background: #2c3a9c; }
+
+.how { margin-top: 12px; padding: 10px; animation: none; }
+.how h2 { margin: 0 0 6px; font: inherit; font-family: G11B; font-size: calc(var(--u) + 2px); color: var(--gold); }
+.how .pts { max-width: 28em; }
+.how ul { margin: 8px 0 0; padding: 0; list-style: none; max-width: 65ch; color: var(--dim); }
+.how li + li { margin-top: 2px; }
+</style>
+</head>
+<body>
+<header class="hero"><div class="wrap">
+  <div><h1>강호 명부</h1><p>삼류강호 점수 랭킹. 판이 끝나면 여기에 한 줄이 남는다.</p></div>
+  <a class="go" href="index.html">직접 도전하기</a>
+</div></header>
+<div class="wrap">
+  <div class="tabs" role="tablist" aria-label="길" id="tabs"></div>
+  <main class="win">
+    <p class="ddesc" id="ddesc"></p>
+    <div class="org" id="org" role="group" aria-label="출신"></div>
+    <div class="sum"><span id="sum" role="status"></span><label class="chk"><input type="checkbox" id="onlyWin">완주만 보기</label></div>
+    <div class="cols" aria-hidden="true"><span class="n">순위</span><span></span><span>이름</span><span class="n">점수</span><span>도달</span><span>경지</span><span class="n">보물</span><span class="n">덱</span><span class="n">턴</span><span class="n">날짜</span></div>
+    <ol class="list" id="list"></ol>
+    <div class="state" id="state" hidden></div>
+  </main>
+  <section class="win how" aria-labelledby="howh">
+    <h2 id="howh">점수 매기는 법</h2>
+    <table class="pts"><tbody id="how"></tbody></table>
+    <ul>
+      <li>출사(보통)·혈로(어려움)·아수라는 따로 겨룬다. 유람은 명부에 오르지 않는다.</li>
+      <li>쓰러져도 점수는 남는다. 판이 끝난 화면에서 이름을 적으면 한 줄이 된다.</li>
+      <li>이름은 누구나 같은 것을 쓸 수 있다. 말이 안 되는 기록은 지운다.</li>
+    </ul>
+  </section>
+</div>
+<script type="module">
+import { api, POINT, scoreParts, RANKED, RANKING_URL } from './js/rank.js';
+import { CARDS, RELICS, SIMS, TYPE } from './js/cards.js';
+import { ORIGINS, REALMS, ENEMIES, DIFFS } from './js/data.js';
+
+const $ = id => document.getElementById(id);
+const h = (tag, cls, text, parent) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; if (parent) parent.append(e); return e; };
+const cm = n => Number(n).toLocaleString('ko-KR');
+const TAB = { 1: '보통', 2: '어려움', 3: '지옥' }; // 게임 안 이름 옆에 붙이는 쉬운 말
+const ORDER = ['musa', 'sega', 'hwasan', 'sorim', 'mudang', 'bukhae', 'dang', 'magyo'];
+const KIND = { normal: '일반 전투', elite: '정예', mboss: '중간 두목', boss: '지역 두목', duel: '비무' };
+let nick = ''; try { nick = JSON.parse(localStorage.getItem('samryu_nick')) || ''; } catch { }
+const cache = {};
+let diff = RANKED.map(d => 'd' + d).includes(location.hash.slice(1)) ? Number(location.hash.slice(2)) : 3, origin = '';
+
+for (const d of RANKED) {
+  const b = h('button', 'tab', null, $('tabs')); b.type = 'button'; b.setAttribute('role', 'tab'); b.dataset.d = d;
+  h('b', null, DIFFS[d].name, b); h('small', null, TAB[d], b);
+  b.onclick = () => { diff = d; history.replaceState(null, '', '#d' + d); open(); };
+}
+const orgBtns = {};
+for (const k of ['', ...ORDER]) {
+  const b = h('button', null, null, $('org')); b.type = 'button'; orgBtns[k] = b;
+  const i = h('i', null, k ? null : '全', b); if (k) i.style.backgroundImage = `url(assets/pt_${k}.png)`;
+  h('span', null, k ? ORIGINS[k].sel.tab : '전체', b);
+  b.onclick = () => { origin = k; render(); };
+}
+$('onlyWin').onchange = render;
+
+const howRows = [
+  ['지역을 넘을 때마다', cm(1000)],
+  ...Object.keys(KIND).map(k => [KIND[k] + ' 승리', cm(POINT[k])]),
+  ['완주', cm(3000)],
+  ['완주 때 남은 체력', '최대 ' + cm(1000)],
+  ['완주 때 턴 효율', '2,000 − 턴 × 4'],
+];
+for (const [a, b] of howRows) { const tr = h('tr', null, null, $('how')); h('td', null, a, tr); h('td', null, b, tr); }
+
+function say(text, retry) {
+  $('list').replaceChildren(); const s = $('state'); s.hidden = false; s.replaceChildren();
+  h('p', null, text, s);
+  if (retry) { const b = h('button', 'btn2', '다시 불러오기', s); b.type = 'button'; b.onclick = () => { delete cache[diff]; open(); }; }
+}
+async function open() {
+  for (const b of $('tabs').children) b.setAttribute('aria-selected', String(Number(b.dataset.d) === diff));
+  $('ddesc').textContent = DIFFS[diff].desc;
+  $('sum').textContent = '';
+  if (!RANKING_URL) return say('랭킹 서버가 아직 연결되지 않았다.');
+  if (!cache[diff]) {
+    say('명부를 펼치는 중…');
+    const want = diff;
+    try {
+      const j = await api(null, 'diff=' + want);
+      if (!j.ok) throw new Error(j.error);
+      cache[want] = j;
+    } catch { if (want === diff) say('명부를 불러오지 못했다. 잠시 뒤 다시 눌러 주시오.', true); return; }
+    if (want !== diff) return;
+  }
+  render();
+}
+function render() {
+  const j = cache[diff]; if (!j) return;
+  for (const k in orgBtns) orgBtns[k].setAttribute('aria-pressed', String(k === origin));
+  const rows = j.rows.filter(r => (!origin || r.origin === origin) && (!$('onlyWin').checked || r.win === true));
+  const scope = origin ? ORIGINS[origin].sel.tab + ' ' : '';
+  $('sum').replaceChildren();
+  h('span', null, `${DIFFS[diff].name}의 길 ${j.total}판 · 완주 `, $('sum')); h('b', null, `${j.clears}판`, $('sum'));
+  if (origin || $('onlyWin').checked) h('span', null, ` · ${scope}${rows.length}줄`, $('sum'));
+  const s = $('state');
+  if (!rows.length) {
+    if (j.total) return say('조건에 맞는 기록이 없다.');
+    say(`아직 ${DIFFS[diff].name}의 길을 남긴 이가 없다. 첫 이름이 되어 보시오.`);
+    return;
+  }
+  s.hidden = true;
+  $('list').replaceChildren(...rows.map((r, i) => rowEl(r, i)));
+}
+function rowEl(r, i) {
+  const li = h('li', 'row' + (i === 0 && !origin ? ' first' : '') + (nick && r.name === nick ? ' me' : ''));
+  const b = h('button', 'r', null, li); b.type = 'button'; b.setAttribute('aria-expanded', 'false');
+  h('span', 'rk', String(i + 1), b);
+  h('span', 'pt', null, b).style.backgroundImage = `url(assets/pt_${r.origin}.png)`;
+  h('span', 'nm', r.name, b);
+  h('span', 'sc', cm(r.score), b);
+  const m = h('span', 'meta', null, b);
+  const foe = ENEMIES[r.foe]?.name;
+  const reach = h('span', r.win === true ? 'cl' : '', r.win === true ? '완주' : r.place, m);
+  reach.title = foe ? `${foe}에게 쓰러짐` : '';
+  h('span', null, `${REALMS[r.realm] || ''} Lv${r.level}`, m);
+  for (const [lab, v] of [['보물', r.relics.length], ['덱', r.deck.length], ['턴', r.turns]]) { const c = h('span', 'n', null, m); h('i', null, lab + ' ', c); c.append(String(v)); }
+  const t = new Date(r.time); h('span', 'n dt', `${t.getMonth() + 1}.${String(t.getDate()).padStart(2, '0')}`, m);
+  let d = null;
+  b.onclick = () => {
+    const on = b.getAttribute('aria-expanded') !== 'true';
+    b.setAttribute('aria-expanded', String(on));
+    if (on && !d) d = detail(r, li); else if (d) d.hidden = !on;
+  };
+  return li;
+}
+function detail(r, li) {
+  const d = h('div', 'd', null, li), P = scoreParts(r);
+  const left = h('div', null, null, d), right = h('div', null, null, d);
+  h('h3', null, '점수 내역', left);
+  const tb = h('tbody', null, null, h('table', 'pts', null, left));
+  const line = (a, sub, v, cls) => { const tr = h('tr', cls, null, tb), td = h('td', null, a, tr); if (sub) { td.append(' '); h('small', null, sub, td); } h('td', null, v, tr); };
+  line('지역', `${r.region}곳 넘음`, cm(P.region));
+  for (const k of Object.keys(KIND)) if (r[k]) line(KIND[k], `${r[k]}번`, cm(r[k] * POINT[k]));
+  if (r.win === true) { line('완주', '', cm(P.clear)); line('남은 체력', `${r.hp}/${r.maxHp}`, cm(P.hp)); line('턴 효율', `${r.turns}턴`, cm(P.speed)); }
+  line('합계', '', cm(r.score), 'tot');
+  const foe = ENEMIES[r.foe]?.name;
+  if (r.win !== true && (foe || r.place)) { const p = h('p', null, null, left); p.style.margin = '6px 0 0'; p.textContent = foe ? `${r.place}에서 ${foe}에게 쓰러졌다.` : `${r.place}에서 쓰러졌다.`; }
+  const sec = t => { const s = h('div', 'sec', null, right); h('h3', null, t, s); return s; };
+  if (SIMS[r.sim]) h('div', null, SIMS[r.sim].name, sec('심법'));
+  if (r.relics.length) { const ul = h('ul', 'chips', null, sec(`보물 ${r.relics.length}`)); for (const id of r.relics) { const li = h('li', null, RELICS[id]?.name || id, ul); if (RELICS[id]?.desc) li.title = String(RELICS[id].desc).replace(/<[^>]+>/g, ''); } }
+  const count = {}; for (const id of r.deck) count[id] = (count[id] || 0) + 1;
+  const ul = h('ul', 'chips', null, sec(`덱 ${r.deck.length}장`));
+  for (const id of Object.keys(count).sort((a, b) => count[b] - count[a])) {
+    const c = CARDS[id], item = h('li', null, null, ul), t = h('span', 't', null, item);
+    t.style.background = TYPE[c?.type] || '#888';
+    item.append(c?.name || id);
+    if (count[id] > 1) { item.append(' '); h('em', null, '×' + count[id], item); }
+  }
+  return d;
+}
+open();
+</script>
+</body>
+</html>
