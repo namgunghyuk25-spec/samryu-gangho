@@ -164,11 +164,12 @@ export class CardBattle extends Battle {
     const por = document.querySelector('#root').classList.contains('por'); // 세로 화면: 손패가 아래칸이라 띄우지 않고, 주인공을 조금 안으로(당겨 볼 때 잘리지 않게)
     const u = super.makeUnit(d, side, [pos[0] - (por && side === 'hero' ? 18 : 0), pos[1] + (por ? 0 : LIFT)]); // 손패가 발치를 가리지 않게 조금 위로
     u.cs = {};
+    if (side === 'hero') u.gauge = 100; // 모든 전투는 내가 먼저 움직인다
     if (side === 'enemy') {
       u.kit = BOSS_KIT[u.id] || null;
       u.intents = FOES[u.id] ? FOES[u.id].intents : intentsFrom(u);
       if (!u.intents.some(i => i.k === 'ult')) { const top = Math.max(5, ...u.intents.filter(i => i.dmg).map(i => i.dmg * (i.hits || 1))); u.intents = [...u.intents, { k: 'ult', name: '전력 일격', dmg: Math.round(top * 1.8), w: 0, vfx: 'slash' }]; }
-      u.tier = u.boss || u.duel ? diffOf(this.run).bossTier : 1; // 적도 주천을 돈다: 차례마다 한 단씩, 3단이면 절초
+      u.tier = u.duel || (u.boss && this.run.region > 0) ? diffOf(this.run).bossTier : 1; // 적도 주천을 돈다: 차례마다 한 단씩, 3단이면 절초
       u.ib = el('div', 'intent', null, this.tagLayer); this.nextIntent(u);
     }
     return u;
@@ -965,34 +966,68 @@ export class CardBattle extends Battle {
     this.refreshPanel();
   }
   // ── 카드 얼굴·도움말 ──
-  mainOf(c, t, cg = 0) { // 지금 상태에서의 주 효과(cg: 축기)
-    const s = this.hero ? this.hero.st.shield : 0;
-    if (c.cgBlock) return `호신 ${val(c.block, t) + c.cgBlock * cg}`;
+  hitOf(c, t, u) { // 이 카드의 [한 타 기본 피해, 타수](effect와 같은 식). u: 겨눈 적, 없으면 적 상태를 뺀다. 숫자로 못 정하면 null
+    const h = this.hero, s = h.st.shield, v = c.dmg != null ? val(c.dmg, t) : 0, f = u ? u.cs : {};
     switch (c.special) {
-      case 'jeonghwa': return `회복 ${4 + 3 * cg}`;
+      case 'mangae': return [6, Math.min(12, Math.max(1, this.res))];
+      case 'hangma': return [Math.max(1, Math.round(s * [1, 0.7, 0.5][t - 1])), 1];
+      case 'daeryeok': return [Math.min(50, Math.max(1, this.blocked)), 1];
+      case 'yeonhwan': return [v, Math.min(8, this.chain + 1)];
+      case 'ilseom': return [v, this.chain + 1 >= 3 ? 2 : 1];
+      case 'samjae': return [[4, 8, 5][t - 1], t === 3 ? 2 : 1];
+      case 'nahan': return [v + (t === 1 ? Math.min(8, Math.floor(s / 3)) : 0), 1];
+      case 'petal': return [v + 3 * (this.powers.nakyeong || 0) + this.petalBonus, 1];
+      case 'nahyeol': return [Math.max(1, Math.min(30, s)), 1];
+      case 'returned': return [6 + this.returned, 1];
+      case 'cheonmasin': return [Math.min(60, Math.max(5, Math.round(h.maxHp - h.hp))), 1];
+      case 'noejeong': return [v * (this.heat ? 2 : 1), 1];
+      case 'mangeom': return [8 + 6 * this.attacks, 1];
+      case 'shatter': return [v * (f.frozen ? 2.5 : 1), 1];
+      case 'jwasu': return [v * (u && u.intent && u.intent.k === 'stun' ? 2 : 1), 1];
+      case 'dgchain': return null;
+      case 'bingbaek': return u && [(18 + 3 * (f.frost || 0)) * (f.frozen ? 2 : 1), 1];
+      case 'dokbal': return u && [Math.max(1, Math.round((f.poison || 0) * [1, 1.5, 2][t - 1])), 1];
+      case 'hyeolhae': return u && [3 + 2 * (f.bleed || 0), 1];
+      case 'dokryong': return u && [Math.max(5, (f.poison || 0) * 3), 1];
+    }
+    return c.dmg != null ? [v, c.hits || 1] : null;
+  }
+  finalHit(c, base, u) { // 슬더스식 최종 한 타: 이 카드를 낸 뒤의 연환·잡학으로 strike·calc를 그대로 탄다(확률 치명은 없다)
+    const { chain, mixed } = this;
+    const mul = c.type !== '공' ? 1 : (this.dbl ? this.dblMul : 1) * (this.rel('sutdol') && !this.sutdolUsed ? 2 : 1) * (this.rel('oesu') && this.hand.length === 1 ? 2 : 1);
+    this.chain++; if (this.free && this.lastSchool && c.school !== this.lastSchool) this.mixed++;
+    const d = this.calc(this.hero, u || { cs: {} }, { dmg: this.strikeDmg(c, base, mul, this.sim && c.school === this.sim.school) }).dmg;
+    this.chain = chain; this.mixed = mixed;
+    return d;
+  }
+  blockOf(c, t, cg) { // 이 카드의 기본 호신. 없으면 null
+    switch (c.special) {
+      case 'samjae': return t === 1 ? 3 : null;
+      case 'gyeonsu': return c.block + 3 * this.guards;
+      case 'hyeolgap': return val(c.block, t) * (this.hero.hp <= this.hero.maxHp / 2 ? 2 : 1);
+      case 'hancheon': return 4 + Math.min(20, this.enemies.reduce((a, u) => a + (u.cs.frost || 0), 0));
+    }
+    return c.block != null ? val(c.block, t) + (c.cgBlock || 0) * cg : null;
+  }
+  mainOf(c, t, cg = 0) { // 지금 내면 실제로 들어갈 주 효과(cg: 축기). 기본값보다 세면 초록, 약하면 빨강
+    if (!this.hero) return staticMain(c, t);
+    const heal = n => Math.round(this.rel('pimaeng') ? n / 2 : n), mark = (n, b) => (n > b ? `<b class="up">${n}</b>` : n < b ? `<b class="dn">${n}</b>` : n);
+    switch (c.special) {
+      case 'jeonghwa': return `회복 ${heal(4 + 3 * cg)}`;
       case 'double': return `다음 ×${2 + 0.5 * cg}`;
-      case 'mangae': return `피해 6×${Math.min(12, Math.max(1, this.res))}`;
-      case 'hangma': return `피해 ${Math.max(1, Math.round(s * [1, 0.7, 0.5][t - 1]))}`;
-      case 'daeryeok': return `피해 ${Math.min(50, Math.max(1, this.blocked))}`;
-      case 'yeonhwan': return `${val(c.dmg, t)}×${Math.min(8, this.chain + 1)}`;
-      case 'ilseom': return `피해 ${val(c.dmg, t)}${this.chain + 1 >= 3 ? '×2' : ''}`;
-      case 'nahan': return `${c.target === 'all' ? '전체 ' : '피해 '}${val(c.dmg, t) + (t === 1 ? Math.min(8, Math.floor(s / 3)) : 0)}`;
-      case 'petal': return `피해 ${val(c.dmg, t) + 3 * (this.powers.nakyeong || 0) + this.petalBonus}`;
-      case 'nahyeol': return `피해 ${Math.max(1, Math.min(30, s))}`;
       case 'chilmae': return `꽃잎 ${Math.max(0, this.energy) * 2}장`;
-      case 'gyeonsu': return `호신 ${c.block + 3 * this.guards}`;
-      case 'returned': return `피해 ${6 + this.returned}`;
-      case 'cheonmasin': return `피해 ${Math.min(60, Math.max(5, Math.round(this.hero.maxHp - this.hero.hp)))}`;
-      case 'hyeolgap': return `호신 ${val(c.block, t) * (this.hero.hp <= this.hero.maxHp / 2 ? 2 : 1)}`;
-      case 'noejeong': return `피해 ${val(c.dmg, t) * (this.heat ? 2 : 1)}`;
-      case 'hancheon': return `호신 ${4 + Math.min(20, this.enemies.reduce((a, u) => a + (u.cs.frost || 0), 0))}`;
-      case 'haedok': return `회복 ${Math.min(12, Math.ceil(this.enemies.reduce((a, u) => a + (u.cs.poison || 0), 0) / 3)) + 3 * cg}`;
+      case 'haedok': return `회복 ${heal(Math.min(12, Math.ceil(this.enemies.reduce((a, u) => a + (u.cs.poison || 0), 0) / 3)) + 3 * cg)}`;
       case 'yanggeom': return cg ? `내력 +${cg}` : '내력 모음';
       case 'geomsim': return t === 3 ? '2장·식힘' : '1장 뽑기';
-      case 'mangeom': return `전체 ${8 + 6 * this.attacks}`;
     }
-    return staticMain(c, t);
+    const u = this.aim || (this.enemies.length === 1 ? this.enemies[0] : null), hit = this.hitOf(c, t, u), b = this.blockOf(c, t, cg);
+    const pre = c.target === 'all' ? '전체' : '피해', dmg = hit && `${mark(this.finalHit(c, hit[0], u), Math.round(hit[0]))}${hit[1] > 1 ? '×' + hit[1] : ''}`;
+    const blk = b != null && mark(b + (this.sim && c.school === this.sim.school ? SIM_SYN.block : 0) + (this.hosimReady ? 4 : 0), b);
+    if (hit && blk) return `${pre}${dmg}·호신${blk}`;
+    if (hit) return `${pre} ${dmg}`;
+    return blk && !c.main ? `호신 ${blk}` : staticMain(c, t);
   }
+  aimAt(t) { this.aim = t; const v = this.hand.find(k => k.raised); if (v) { v.el.querySelector('.cm').innerHTML = this.mainOf(CARDS[v.id], this.tier, v.charge || 0); v.html = null; } } // 겨눈 적의 내상·빙결까지 넣어 보여 준다
   cardHelp(id) {
     const c = CARDS[id], mv = tierMove(c), nt = Math.max(1, Math.min(3, c.finisher ? (this.run.relics.includes('hori') ? 2 : 1) : c.setTo || this.tier + (c.tier || 0)));
     const why = !this.playable(id) ? (this.cost(c) > this.energy || c.cost === 'X' ? ' <span class="red">· 내력 부족</span>' : ` <span class="red">· ${ROMAN[c.only - 1]}에서만</span>`) : '';
@@ -1026,22 +1061,22 @@ export class CardBattle extends Battle {
     h.hp -= n; if (this.rel('bloodjade')) this.bloodBonus = (this.bloodBonus || 0) + n; const [x, y] = this.center(h); popText(x, y + 14, '-' + n, 'hurt'); burst(x, y, { n: 8, cols: ['#ff3040', '#800010'], spd: [20, 60] }); sfx('hit');
   }
   cardBlock(n) { this.gainBlock(n + (this.syn ? SIM_SYN.block : 0)); } // 카드가 주는 호신(심법 시너지 포함)
-  gainBlock(n) { if (n <= 0) return; if (this.hosimReady) { this.hosimReady = false; n += 4; } this.hero.st.shield += n; popText(...this.top(this.hero), '호신 +' + n, 'qi'); sfx('buff'); }
+  gainBlock(n) { if (n <= 0) return; if (this.hosimReady) { this.hosimReady = false; n += 4; } this.hero.st.shield += n; this.barrier(this.hero, true); popText(...this.top(this.hero), '호신 +' + n, 'qi'); sfx('buff'); }
   gainEnergy(n, why = '') { this.energy += n; popText(...this.top(this.hero), `${why}내력 +${n}`, 'qi'); }
-  async selfAnim(c) { // 제 몸에 거는 초식: 시전 빛을 몸 앞에(뒤 후광은 몸에 가려 안 보였다), 막는 카드는 앞에 막이 선다
+  async selfAnim(c) { // 제 몸에 거는 초식: 시전 빛을 몸 앞에(뒤 후광은 몸에 가려 안 보였다), 막은 몸 뒤에 선다(barrier)
     const h = this.hero, [x, y] = this.center(h), front = { parent: this.group, layer: h.mesh.renderOrder + 2 };
     this.playSeq(h, 'cast');
     if (c.vfx === 'gold') { playFx('goldCast', x, y, front); sfx('buff'); await wait(260); }
     else if (c.vfx === 'taiji') { playFx('taijiCast', h.mesh.position.x, h.mesh.position.y + 1, front); sfx('buff'); await wait(260); }
     else await this.castFx(h, { vfx: c.vfx }, [h]);
-    if (c.type === '수') playFx('shield', x - 8, y, { ...front, flip: true });
+    if (c.type === '수' && !h.barM) playFx('barrier', h.mesh.position.x, h.mesh.position.y + 1, { parent: this.group, layer: h.mesh.renderOrder - 1, speed: 3 }); // 호신 없는 수비(되치기·흘림)도 잠깐 막이 뜬다
     this.setPose(h, 'idle');
   }
+  strikeDmg(c, dmg, mul, syn) { return (c.type === '공' ? dmg * mul + (this.tier === 3 ? 3 * (this.powers.daegeom || 0) : 0) + (this.bloodBonus || 0) : dmg) * (syn ? 1 + SIM_SYN.dmg : 1); } // 초식 → 보물·심법
   async strike(c, tgt, dmg, hits, extra = {}) {
     const alive = tgt.filter(x => x.alive); if (!alive.length) return;
-    if (c.type === '공') dmg = dmg * this.mul + (this.tier === 3 ? 3 * (this.powers.daegeom || 0) : 0);
-    if (c.type === '공' && this.bloodBonus) { dmg += this.bloodBonus; popText(...this.top(this.hero), '혈옥 +' + this.bloodBonus, 'warn'); this.bloodBonus = 0; }
-    if (this.syn) dmg *= 1 + SIM_SYN.dmg;
+    dmg = this.strikeDmg(c, dmg, this.mul, this.syn);
+    if (c.type === '공' && this.bloodBonus) { popText(...this.top(this.hero), '혈옥 +' + this.bloodBonus, 'warn'); this.bloodBonus = 0; }
     if (c.only === 3) return this.jeolcho(c, alive, dmg, hits);
     await this.useSkill(this.hero, { name: c.name, dmg, hits, target: c.target === 'all' ? 'all' : 'one', vfx: c.vfx, fx: {}, ...extra }, alive);
   }

@@ -152,6 +152,7 @@ export class Battle {
       if (u.side === 'hero' && u.alive && u.st.counter && Math.random() < 0.15) { const [x, y] = this.center(u); spawn({ x: x + R(-10, 10), y: y + R(-10, 10), vy: 20, life: 300, size: 1, col: '#80ffff' }); }
       if (u.trem > 0) { u.trem -= real; u.mesh.material.uniforms.off.value.x = u.trem > 0 ? ((u.trem / 33 | 0) % 2 ? u.tremA : -u.tremA) : 0; } // 맞은 몸 떨림(히트스톱 중에도)
       u.shadow.position.x = Math.round(u.mesh.position.x); u.shadow.visible = u.alive || u.side === 'hero';
+      this.barrier(u);
       const x = Math.round(u.mesh.position.x), y = Math.round(240 - u.mesh.position.y);
       u.tag.style.transform = `translate(${x - 15}px, ${y + 1}px)`;
       u.hit.style.transform = `translate(${x - u.size * 0.35}px, ${y - u.size * 0.85}px)`;
@@ -371,6 +372,15 @@ export class Battle {
       onCancel: () => { close(); parent.focus(parent.idx); },
     });
   }
+  barrier(u, pulse) { // 호신이 있는 동안 몸 뒤에 막이 떠 있다(생길 때·늘 때 부풀고, 다 깎이면 깨진다)
+    const on = u.alive && u.st.shield > 0, x = Math.round(u.mesh.position.x), y = Math.round(u.mesh.position.y) + 1, k = Math.max(1, u.size / 64);
+    if (on && !u.barM) { u.barM = playFx('barrier', x, y, { parent: this.group, loop: true, scale: k, opacity: 0.85 }); pulse = true; }
+    else if (!on && u.barM) { u.barM.parent.remove(u.barM); u.barM = null; burst(...this.center(u), { n: 18, cols: ['#a0e0ff', '#ffffff', '#4080d0'], spd: [40, 130], up: 10 }); }
+    if (!u.barM) return;
+    u.barM.position.set(x, y, 0); u.barM.renderOrder = u.mesh.renderOrder - 1;
+    if (pulse) { u.barM.scale.set(k * 0.8, k * 0.8, 1); tween(u.barM.scale, { x: k, y: k }, 180, ease.out); }
+  }
+  aimAt() {} // 겨눈 적이 바뀔 때(카드 전투가 카드 수치를 고친다)
   selectTarget() {
     const list = this.enemies.sort((a, b) => b.mesh.position.y - a.mesh.position.y || a.mesh.position.x - b.mesh.position.x);
     if (list.length === 1) return Promise.resolve([list[0]]);
@@ -380,8 +390,9 @@ export class Battle {
         const t = list[i], [x, y] = toStage(...this.top(t));
         Object.assign(this.cursor.style, { left: Math.round(x - 4) + 'px', top: Math.round(y - 12) + 'px' });
         this.help(`${t.name}  <span class="dim">체력 ${Math.ceil(t.hp)}/${t.maxHp}</span>`);
+        this.aimAt(t);
       };
-      let done = t => { off(); this.cursor.classList.add('hidden'); list.forEach(u => { u.hit.onclick = u.hit.onmouseenter = null; u.hit.classList.remove('on'); }); if (t) this.lastTarget = t; res(t ? [t] : null); };
+      let done = t => { off(); this.aimAt(null); this.cursor.classList.add('hidden'); list.forEach(u => { u.hit.onclick = u.hit.onmouseenter = null; u.hit.classList.remove('on'); }); if (t) this.lastTarget = t; res(t ? [t] : null); };
       list.forEach((u, j) => { u.hit.classList.add('on'); u.hit.onmouseenter = () => { i = j; show(); }; u.hit.onclick = e => { e.stopPropagation(); sfx('ok'); done(u); }; });
       const off = pushKeys(k => {
         if (k === 'left' || k === 'up') { i = (i + list.length - 1) % list.length; sfx('move'); show(); }
@@ -885,7 +896,7 @@ export class Battle {
   destroy() {
     this.offFrame(); this.offSpeed();
     clock.scale = 1;
-    for (const u of this.units) if (u.iceM) { if (u.iceM.parent) u.iceM.parent.remove(u.iceM); u.iceM = null; } // 되풀이 이펙트를 멈춘다
+    for (const u of this.units) for (const k of ['iceM', 'barM']) if (u[k]) { if (u[k].parent) u[k].parent.remove(u[k]); u[k] = null; } // 되풀이 이펙트를 멈춘다
     this.group.traverse(o => { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } });
     scene.remove(this.group);
     for (const u of this.units) for (const k in u.texs) u.texs[k].dispose();

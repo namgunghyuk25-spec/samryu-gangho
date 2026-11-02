@@ -5,7 +5,7 @@ import * as D from './data.js';
 import { Battle } from './battle.js';
 import { CardBattle, cardFace, cardClass } from './cardbattle.js';
 import { teleStart, teleFight, telePick, teleSave } from './tele.js';
-import { hasRank, RANKED, rankStart, runRecord, tally, scoreParts, scoreOf, api } from './rank.js';
+import { VER, hasRank, RANKED, rankStart, runRecord, tally, scoreParts, scoreOf, api } from './rank.js';
 import { CARDS, DECKS, OUTER, RELICS, rollCards, rollRelics, rarity, checkCombos, comboMade, comboHint, SIMS, SIM_SYN, SECT_SIM, BOOK_SIM, rollSim } from './cards.js';
 import { music } from './music.js';
 import { charSelect } from './charselect.js';
@@ -55,6 +55,8 @@ const schoolCount = () => D.schoolCountOf(run);
 const combosOn = () => D.combosOf(run);
 const heroStats = () => D.heroStatsOf(run);
 const DF = () => D.diffOf(run);
+const gifted = id => D.ENEMIES[id] && D.ENEMIES[id].master && DF().masterHeal; // 아수라의 장문인: 이기면 체력 80%·보물 +1·은자 2배·초식 선택지 그대로, 져도 체력 50%
+const mend = i => { run.hp = Math.max(run.hp, Math.round(heroStats().maxHp * DF().masterHeal[i])); };
 function heroForBattle() {
   const s = heroStats();
   const skills = run.slots.filter(Boolean).map(id => ({ ...D.skillOf(id, run.books[id]) }));
@@ -197,7 +199,7 @@ function cardsFor(kind, master) {
     else if (kind === 'duel') { const m = D.ENEMIES[master].master, k = DECKS[m] && m !== run.school ? pick(DECKS[m].pool) : OUTER_OF[m] && !run.deck.includes(OUTER_OF[m]) ? OUTER_OF[m] : outerCard(); books.push(k); out.push({ kind: 'card', id: k }); book(); book(); }
     else { const m = D.ENEMIES[master] && D.ENEMIES[master].master; const k = m && m !== run.school && (DECKS[m] ? pick(DECKS[m].pool) : OUTER_OF[m]); if (k) { books.push(k); out.push({ kind: 'card', id: k }); } book(); book(); if (!k) outer(); } // 장문인을 쓰러뜨리면 그 문파 초식
     if (run.relics.includes('token')) book();
-    out.length -= Math.min(out.length - 1, DF().choices + (run.relics.includes('geumseo') ? 1 : 0));
+    out.length -= Math.min(out.length - 1, (gifted(master) ? 0 : DF().choices) + (run.relics.includes('geumseo') ? 1 : 0));
     return out;
   }
   if (kind === 'normal') { book(1, Math.random() < 0.15 ? 2 : 1); out.push({ kind: 'part', id: randPart() }); Math.random() < 0.5 ? book(1, 2) : out.push(Math.random() < 0.5 ? { kind: 'part', id: randPart() } : { kind: 'pill', id: pick(Object.keys(D.PILLS)) }); }
@@ -273,10 +275,11 @@ function gainExp(n) {
 async function rewardScreen(kind, ids, master) {
   const r = run.region;
   const exp = Math.round(ids.reduce((a, id) => a + (D.ENEMIES[id].mid ? 30 : D.ENEMIES[id].boss ? 50 : D.ENEMIES[id].elite ? 20 : 7), 0) * (1 + 0.6 * r));
-  const gold = Math.round(ids.reduce((a, id) => a + (D.ENEMIES[id].mid ? 40 : D.ENEMIES[id].boss ? 60 : D.ENEMIES[id].elite ? 28 : 7), 0) * (1 + 0.1 * r) * R(0.85, 1.15) * DF().gold);
+  const gold = Math.round(ids.reduce((a, id) => a + (D.ENEMIES[id].mid ? 40 : D.ENEMIES[id].boss ? 60 : D.ENEMIES[id].elite ? 28 : 7), 0) * (1 + 0.1 * r) * R(0.85, 1.15) * DF().gold * (gifted(master) ? 2 : 1));
   run.gold += gold;
   const lv = gainExp(exp);
   let extra = '';
+  if (gifted(master)) { mend(0); extra += ` · 기혈 회복(체력 ${run.hp})`; }
   if (kind !== 'normal' && !run.school) { const p = randPart(); addItem(p); extra = ` · ${D.itemInfo(p).name}`; }
   if (Math.random() < 0.25 && kind === 'normal') { const p = pick(['geumchang', 'sohwan', 'haedok']); add(run.pills, p, 1); extra += ` · ${D.PILLS[p].name}`; }
   sfx('coin');
@@ -308,7 +311,7 @@ async function chooseFoe(mainId) { // 두목 칸: 이 지역 두목과 구파일
   const ms = Object.keys(D.ENEMIES).filter(k => /^m_/.test(k) && D.ENEMIES[k].master && D.ENEMIES[k].master !== 'magyo' && D.ENEMIES[k].master !== run.school && !(run.beat || []).includes(k));
   if (!ms.length) return [mainId];
   const opts = [mainId, pick(ms)];
-  const i = await choose('누구와 겨룰 것인가', '이긴 상대의 성향대로 보물과 초식이 달라진다.', opts.map(id => ({ html: `<span class="gold">${D.ENEMIES[id].name}</span> <span class="dim">${D.ENEMIES[id].title || ''}</span>`, desc: `보상 성향: <span class="gold">${FOE_THEME[id] || '공격'}</span>${D.ENEMIES[id].master ? ` · ${D.SCHOOLS[D.ENEMIES[id].master].name} 초식` : ''}` })));
+  const i = await choose('누구와 겨룰 것인가', '이긴 상대의 성향대로 보물과 초식이 달라진다.', opts.map(id => ({ html: `<span class="gold">${D.ENEMIES[id].name}</span> <span class="dim">${D.ENEMIES[id].title || ''}</span>`, desc: `보상 성향: <span class="gold">${FOE_THEME[id] || '공격'}</span>${D.ENEMIES[id].master ? ` · ${D.SCHOOLS[D.ENEMIES[id].master].name} 초식` : ''}${gifted(id) ? ' · 이기면 보물 +1·은자 2배·체력 80%. 두목 자리라 지면 끝이다' : ''}` })));
   (run.beat ||= []).push(opts[i]); telePick(run, 'foe', D.ENEMIES[opts[i]].name);
   return [opts[i]];
 }
@@ -319,16 +322,17 @@ function pickEnemies(n) {
   if (n.type === 'duel' || n.type === 'rank') return [n.master || reg.duel[0]];
   if (n.type === 'elite') return n.region >= 3 && reg.duo ? pick(reg.duo) : n.region >= 2 ? [elite, pick(reg.pool)] : [elite]; // R3부터 정예 칸은 네임드 둘
   const cnt = n.layer <= 1 ? (Math.random() < 0.5 ? 1 : 2) : n.layer <= 3 ? 2 + (Math.random() < 0.3 ? 1 : 0) : 2 + (Math.random() < 0.6 ? 1 : 0);
-  return Array.from({ length: Math.min(3, cnt + (n.layer >= 2 ? DF().extraMob : 0)) }, () => pick(reg.pool));
+  return Array.from({ length: Math.min(3, cnt + (n.layer >= 2 ? DF().extraMob[n.region] : 0)) }, () => pick(reg.pool));
 }
 async function battle(ids, kind) {
   const res = await combat(ids, kind);
   if (res.result === 'lose') return 'dead';
-  if (res.result === 'yield') { const lv = gainExp(Math.round(15 * (1 + 0.6 * run.region))); await message(`<div class="mh">비무 패배</div>"좋은 승부였네. 다음엔 더 강해져서 오게."<br>체력이 바닥났지만 목숨은 건졌다.<br><span class="dim">경험을 조금 얻었다</span>${lv.map(x => '<br>' + x).join('')}`); return 'ok'; }
+  if (res.result === 'yield') { const lv = gainExp(Math.round(15 * (1 + 0.6 * run.region))), kept = gifted(ids[0]); if (kept) mend(1); await message(`<div class="mh">비무 패배</div>"좋은 승부였네. 다음엔 더 강해져서 오게."<br>${kept ? `${D.ENEMIES[ids[0]].name}이(가) 기혈을 다스려 주었다. 체력 ${run.hp}/${heroStats().maxHp}` : '체력이 바닥났지만 목숨은 건졌다.'}<br><span class="dim">경험을 조금 얻었다</span>${lv.map(x => '<br>' + x).join('')}`); return 'ok'; }
   run.wins++; run.kills += res.kills.length;
   if (D.ENEMIES[ids[0]].rank) await rankUp(D.ENEMIES[ids[0]].rank);
   await rewardScreen(kind, res.kills, ids[0]);
   if (run.school && (kind === 'elite' || kind === 'boss' || (kind === 'mboss' && DF().midRelic))) await relicPick(kind === 'elite' ? null : FOE_THEME[ids[0]] || '공격');
+  if (run.school && gifted(ids[0])) await relicPick(FOE_THEME[ids[0]] || '공격');
   return 'ok';
 }
 async function rankUp(r) { // 마교 루트 직위: 말단 → … → 소교주. 오를 때마다 공력 +2 · 최대체력 +12
@@ -984,7 +988,7 @@ async function title() {
       if (Math.random() < 0.18) spawn({ x: R(40, 360), y: SH + 6, vx: R(-26, -8), vy: R(-22, -10), ax: R(-4, 4), life: 16000, size: Math.random() < 0.3 ? 2 : 1, col: pick(['#ffc8dc', '#ff98c0', '#fff0f6']), fade: false }); });
     const s = screen('title');
     const saved = store.get(SAVE);
-    s.innerHTML = `<div class="tt">삼류강호</div><div class="ts">三流江湖 · 도트 무협 로그라이트</div><div class="win tmenu"></div><div class="tc">방향키·Z 결정·X 취소·I 행낭·Tab 배속·M 소리 / 마우스 가능</div>`;
+    s.innerHTML = `<div class="tt">삼류강호</div><div class="ts">三流江湖 · 도트 무협 로그라이트 · v${VER}</div><div class="win tmenu"></div><div class="tc">방향키·Z 결정·X 취소·I 행낭·Tab 배속·M 소리 / 마우스 가능</div>`;
     const choice = await new Promise(res => {
       s.querySelector('.tmenu').classList.toggle('m5', hasRank);
       const m = listMenu(s.querySelector('.tmenu'), [{ html: '새 강호행', v: 'new' }, { html: '이어하기', v: 'cont', disabled: !saved }, { html: '비무 대전', v: 'pvp' }, ...(hasRank ? [{ html: '강호 명부', v: 'rank' }] : []), { html: '강호 견문록', v: 'help' }], { onPick: it => { m.close(); res(it.v); } });
