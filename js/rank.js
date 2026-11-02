@@ -3,7 +3,7 @@ export const RANKING_URL = 'https://script.google.com/macros/s/AKfycbzGMrREd59pB
 export const hasRank = !!RANKING_URL && !window.claude; // 아티팩트 화면은 외부 서버에 닿지 못한다
 export const RANKED = [1, 2, 3]; // 출사(보통)·혈로(어려움)·아수라
 export const POINT = { normal: 20, elite: 120, mboss: 250, boss: 500, duel: 300 };
-export const VER = 52;
+export const VER = 53;
 
 export async function api(body, query = '') {
   const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 20000); // Apps Script는 오래 쉬면 깨어나는 데 몇 초 걸린다

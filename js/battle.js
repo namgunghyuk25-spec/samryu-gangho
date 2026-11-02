@@ -622,7 +622,7 @@ export class Battle {
     popText(x + R(-4, 4), y + 14, tier >= 2 ? d + '!' : '' + d, this.popCls(t, tier, dot));
     if (!dot) this.impact(t, tier);
     if (t.hp <= 0) {
-      if (t.side === 'hero' && this.kind === 'duel') { t.hp = 1; this.yielded = true; this.banner('손을 멈췄다 — 비무 패배', 'red'); return; }
+      if (t.side === 'hero' && this.kind === 'duel' && !this.toDeath) { t.hp = 1; this.yielded = true; this.banner('손을 멈췄다 — 비무 패배', 'red'); return; }
       if (t.side === 'hero' && t.fx.revive && !this.reviveUsed) {
         this.reviveUsed = true;
         t.hp = Math.round(t.maxHp * t.fx.revive);
