@@ -268,7 +268,7 @@ export class CardBattle extends Battle {
     const h = this.hero, e = Math.max(0, this.energy), cs = h.cs || {};
     const sts = [this.drainNext && `<b style="color:#ff9090">다음−${this.drainNext}</b>`, this.echo && '<b style="color:#ffd040">한번더</b>', this.dbl && '<b style="color:#ffd040">두배</b>', this.mixed && `<b style="color:#ffe080">잡학${this.mixed}</b>`,
       this.nextEnergy && `<b style="color:#80c8ff">다음+${this.nextEnergy}</b>`].filter(Boolean).join(' ');
-    const html = `<div class="pt" style="color:${TIER_COL[this.tier - 1]}">${this.tier === 3 && this.heat ? `${ROMAN[2]} <span class="red blink">과열</span>` : `주천 ${ROMAN[this.tier - 1]}`}</div>`
+    const html = `<div class="pt" style="color:${TIER_COL[this.tier - 1]}">${this.tier === 3 && this.heat ? `${ROMAN[2]} <span class="red blink">과열</span>` : this.tier === 1 && this.low && this.run.school === 'sorim' ? `${ROMAN[0]} <span class="gold blink">차오름</span>` : `주천 ${ROMAN[this.tier - 1]}`}</div>`
       + `<div class="pe"><span class="lbl">내력</span>${Array.from({ length: Math.min(4, Math.max(3, e)) }, (_, i) => `<i class="${i < e ? 'on' : ''}"></i>`).join('')}<span class="num">${e}</span></div>`
       + `<div class="pr">${this.useRes ? `<span style="color:#ffb0d0">검기${this.res}</span> ` : ''}<span style="color:#80c0ff">호신${h.st.shield}</span></div>`
       + `<div class="ps">${sts}</div><div class="pw">${[this.sim && this.sim.name, ...Object.entries(this.powers).map(([k, n]) => [k, n - (this.sim && k === this.sim.power ? 1 : 0)]).filter(([k, n]) => n > 0 && PW_NAME[k]).map(([k, n]) => PW_NAME[k] + (n > 1 ? '×' + n : ''))].filter(Boolean).join(' ')}</div>`
