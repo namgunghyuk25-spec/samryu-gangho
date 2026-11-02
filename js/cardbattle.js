@@ -254,6 +254,7 @@ export class CardBattle extends Battle {
     L.push(...this.stList(u));
     if (u === this.hero) {
       if (this.tier === 3 && this.heat && !this.rel('cheongsim')) L.push(['과열', '#ff5060', '다음 내 차례에도 주천 3단이면 주화입마에 빠진다']);
+      if (this.run.school === 'sorim' && this.tier === 1 && this.low) L.push(['차오름', '#ffd050', '다음 내 차례에도 1단이면 기가 차올라 2단이 된다 · 달마심법·염화지로 내려온다']);
       if (this.drainNext) L.push([`다음−${this.drainNext}`, '#ff9090', `다음 차례 내력 −${this.drainNext}`]);
       if (this.echo) L.push(['한번더', '#ffd040', this.echo === 'atk' ? '다음 공격 카드가 한 번 더 나간다' : '다음 카드(심법 빼고)가 한 번 더 나간다']);
       if (this.dbl) L.push(['두배', '#ffd040', `다음 공격 피해 ×${this.dblMul}`]);
@@ -730,12 +731,13 @@ export class CardBattle extends Battle {
     if (this.useRes && !R('maehwa')) this.res = Math.floor(this.res / 2);
     this.mixed = 0; this.lastSchool = null; this.petalBonus = 0;
     if (this.tier === 3) { this.heat++; if (this.heat >= 2 && !R('cheongsim')) await this.qiDeviation(h); } else this.heat = 0;
+    if (this.run.school === 'sorim' && this.tier === 1) { this.low = (this.low || 0) + 1; if (this.low >= 2) { this.low = 0; this.setTier(2); popText(...this.top(h), '기가 차오른다!', 'qi'); } } else this.low = 0; // 소림: 1단에 머물면 기가 차올라 단이 오른다
     this.energy = 3 + (R('heavy') ? 1 : 0) + (this.tier === 1 && R('danjeon') ? 1 : 0) + (this.tier === 3 && R('hwaro') ? 1 : 0) + (R('aekku') ? 1 : 0) + (R('jabgi') && this.run.deck.length >= 30 ? 1 : 0) + this.nextEnergy - this.drainNext;
     if (h.cs.array) { h.cs.array--; this.energy = Math.max(0, this.energy - 1); popText(...this.top(h), '팔괘진 — 내력 −1', 'warn'); ring(...this.center(h), 12, ['#d0b0ff', '#ffffff'], 20, 40); }
     this.drunkReady = R('drunk'); this.moktakReady = R('moktak'); this.dartReady = R('ssangbi'); this.hosimReady = R('hosim'); this.emptyReady = R('gonggwi'); this.drainNext = 0; this.nextEnergy = 0;
     if (R('hyeolmaeng') && this.turnsTaken === 1) { this.loseHp(6); this.energy += 2; popText(...this.top(h), '혈맹 내력 +2', 'qi'); }
     if (R('seolsang')) this.gainBlock(2 * this.enemies.filter(u => u.cs.frost).length);
-    if (this.powers.yeokgeun && this.tier === 1) this.gainBlock(5 * this.powers.yeokgeun);
+    if (this.powers.yeokgeun && this.tier === 1) this.gainBlock(3 * this.powers.yeokgeun);
     if (this.powers.eumyang && this.tier === 2) { this.energy += this.powers.eumyang; this.gainBlock(3 * this.powers.eumyang); }
     if (this.powers.mahwa) { this.loseHp(2 * this.powers.mahwa); this.energy += this.powers.mahwa; popText(...this.top(h), '마화 내력 +' + this.powers.mahwa, 'qi'); }
     h.gauge = this.plannedGauge();
@@ -974,7 +976,7 @@ export class CardBattle extends Battle {
       case 'daeryeok': return `피해 ${Math.min(50, Math.max(1, this.blocked))}`;
       case 'yeonhwan': return `${val(c.dmg, t)}×${Math.min(8, this.chain + 1)}`;
       case 'ilseom': return `피해 ${val(c.dmg, t)}${this.chain + 1 >= 3 ? '×2' : ''}`;
-      case 'nahan': return `${c.target === 'all' ? '전체 ' : '피해 '}${val(c.dmg, t) + (t === 1 ? Math.floor(s / 2) : 0)}`;
+      case 'nahan': return `${c.target === 'all' ? '전체 ' : '피해 '}${val(c.dmg, t) + (t === 1 ? Math.min(8, Math.floor(s / 3)) : 0)}`;
       case 'petal': return `피해 ${val(c.dmg, t) + 3 * (this.powers.nakyeong || 0) + this.petalBonus}`;
       case 'nahyeol': return `피해 ${Math.max(1, Math.min(30, s))}`;
       case 'chilmae': return `꽃잎 ${Math.max(0, this.energy) * 2}장`;
@@ -1226,7 +1228,7 @@ export class CardBattle extends Battle {
       case 'changnak': await this.strike(c, tgt, val(c.dmg, t), 1); if (t === 3) { this.petalBonus += 3; popText(...this.top(h), '꽃잎 피해 +3', 'qi'); } return;
       case 'nahyeol': await this.strike(c, tgt, Math.max(1, Math.min(30, h.st.shield)), 1); return;
       case 'hyeolpo': this.cardBlock(c.block); if (h.hp <= h.maxHp / 2) { h.cs.counter = (h.cs.counter || 0) + 6; popText(...this.center(h), '반격 ' + h.cs.counter, 'st'); } await this.selfAnim(c); return;
-      case 'nahan': await this.strike(c, tgt, val(c.dmg, t) + (t === 1 ? Math.floor(h.st.shield / 2) : 0), 1); return;
+      case 'nahan': await this.strike(c, tgt, val(c.dmg, t) + (t === 1 ? Math.min(8, Math.floor(h.st.shield / 3)) : 0), 1); return;
       case 'cheolpo': { const had = h.st.shield >= 10; this.cardBlock(val(c.block, t)); await this.selfAnim(c); if (had) await this.drawCards(1); return; }
       case 'noejeong': await this.strike(c, tgt, val(c.dmg, t) * (this.heat ? 2 : 1), 1); return;
       case 'icewall': h.cs.icewall = 1; popText(...this.center(h), '빙벽', 'st'); break;
@@ -1243,8 +1245,8 @@ export class CardBattle extends Battle {
       case 'geomsim': if (t === 3) { await this.selfAnim(c); this.heat = 0; popText(...this.center(h), '과열이 식었다', 'qi'); await this.drawCards(2); return 'skip'; } break;
       case 'mangeom': await this.strike(c, tgt, 8 + 6 * (this.attacks - 1), 1); return;
       case 'sajahu': case 'jewanggi': if (t === (c.special === 'sajahu' ? 1 : 3)) { this.playSeq(h, 'cast'); await this.castFx(h, { vfx: c.vfx }, foes()); this.setPose(h, 'idle'); for (const u of foes()) { if (!this.read) { this.blunt(u); this.interrupt(u); } this.addSt(u, 'weak', this.read ? 1 : 2); } return; } break;
-      case 'yeomhwa': await this.strike(c, tgt, 2, 1); for (const u of foes()) this.interrupt(u); if (t === 1) this.gainEnergy(1); return;
-      case 'hangma': await this.strike(c, tgt, Math.max(1, Math.round(h.st.shield * [1, 0.7, 0.5][t - 1])), 1); return;
+      case 'yeomhwa': await this.strike(c, tgt, 2, 1); for (const u of foes()) this.interrupt(u); return;
+      case 'hangma': await this.strike(c, tgt, Math.max(1, Math.round(h.st.shield * [1, 0.7, 0.5][t - 1])), 1); h.st.shield = Math.floor(h.st.shield / 2); return;
       case 'daeryeok': await this.strike(c, tgt, Math.min(50, Math.max(1, this.blocked)), 1, { cutin: true }); this.blocked = 0; return;
       case 'chamseon': if (t === 1) this.nextEnergy += 1; break;
       case 'gyeonsu': this.cardBlock(c.block + 3 * (this.guards - 1)); await this.selfAnim(c); return;

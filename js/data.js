@@ -315,7 +315,7 @@ export const ORIGINS = {
     intro: '"매화는 추운 날에 피는 법이다."<br>말석 제자에게 하산 허락이 떨어졌다. 천마의 소문이 화산까지 올라왔다.' },
   sorim: { name: '소림 속가제자', pc: 'sorim', route: 'normal', school: 'sorim', sect: 'sorim', sim: 'yeokgeun', titles: ['소림 속가제자'],
     desc: '1단에 머물러 호신을 쌓고 되받는다. 정파의 길 — 최종 상대 천마.',
-    sel: { short: '소림제자', tab: '소림', han: '少', col: '#ffb040', style: '금강 되받기', st: [2, 5, 2], show: ['nahan', 'geumgang', 'budong'], blurb: '주천을 1단에 묶고 호신을 쌓아, 쌓은 만큼 되받는다.' },
+    sel: { short: '소림제자', tab: '소림', han: '少', col: '#ffb040', style: '금강 되받기', st: [2, 5, 2], show: ['nahan', 'geumgang', 'budong'], blurb: '1단에서 호신을 쌓아 되받는다. 기가 차오르면 내려와야 한다.' },
     intro: '"세상을 보고 오너라. 주먹은 그다음이다."<br>방장의 한마디에 속가제자는 천 계단을 내려왔다.' },
   mudang: { name: '무당 소도사', pc: 'mudang', route: 'normal', school: 'mudang', sect: 'mudang', sim: 'taeguk', titles: ['무당 소도사'],
     desc: '2단에 머물며 받은 힘을 되돌린다. 정파의 길 — 최종 상대 천마.',
