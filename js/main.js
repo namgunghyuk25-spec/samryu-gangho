@@ -305,9 +305,10 @@ async function rewardScreen(kind, ids, master) {
 // ───────── 전투 ─────────
 const FOE_THEME = { heukpung: '공격', jangang: '공격', dangNo: '독공', hyeolJang: '혈공', cheonmaBoss: '혈공', mb_gwiyeong: '주천', mb_heukryong: '공격', mb_odok: '독공', mb_gangsiwang: '혈공', mb_seolma: '빙공', m_bukhae: '빙공',
   m_sorim: '방어', m_mudang: '주천', m_hwasan: '꽃잎', m_emei: '방어', m_gaebang: '공격', m_cheongseong: '공격', m_jongnam: '주천', m_gonryun: '운기', m_gongdong: '혈공' }; // 이긴 두목의 성향 = 보물 성향
+const freshMasters = () => Object.keys(D.ENEMIES).filter(k => /^m_/.test(k) && D.ENEMIES[k].master && D.ENEMIES[k].master !== 'magyo' && D.ENEMIES[k].master !== run.school && !(run.beat || []).includes(k)); // 같은 장문인은 한 판에 한 번만 만난다
 async function chooseFoe(mainId) { // 두목 칸: 이 지역 두목과 구파일방 장문인 중 고른다
   if (!run.school) return [mainId];
-  const ms = Object.keys(D.ENEMIES).filter(k => /^m_/.test(k) && D.ENEMIES[k].master && D.ENEMIES[k].master !== 'magyo' && D.ENEMIES[k].master !== run.school && !(run.beat || []).includes(k));
+  const ms = freshMasters();
   if (!ms.length) return [mainId];
   const opts = [mainId, pick(ms)];
   const i = await choose('누구와 겨룰 것인가', '이긴 상대의 성향대로 보물과 초식이 달라진다.', opts.map(id => ({ html: `<span class="gold">${D.ENEMIES[id].name}</span> <span class="dim">${D.ENEMIES[id].title || ''}</span>`, desc: `보상 성향: <span class="gold">${FOE_THEME[id] || '공격'}</span>${D.ENEMIES[id].master ? ` · ${D.SCHOOLS[D.ENEMIES[id].master].name} 초식` : ''}` })));
@@ -318,12 +319,13 @@ function pickEnemies(n) {
   const reg = REG()[n.region], elite = Array.isArray(reg.elite) ? pick(reg.elite) : reg.elite;
   if (n.type === 'boss') return [reg.boss];
   if (n.type === 'mboss') return [reg.mid];
-  if (n.type === 'duel' || n.type === 'rank') return [n.master || reg.duel[0]];
+  if (n.type === 'duel' || n.type === 'rank') { const id = n.master || reg.duel[0]; return [/^m_/.test(id) && (run.beat || []).includes(id) && pick(freshMasters()) || id]; }
   if (n.type === 'elite') return n.region >= 3 && reg.duo ? pick(reg.duo) : n.region >= 2 ? [elite, pick(reg.pool)] : [elite]; // R3부터 정예 칸은 네임드 둘
   const cnt = n.layer <= 1 ? (Math.random() < 0.5 ? 1 : 2) : n.layer <= 3 ? 2 + (Math.random() < 0.3 ? 1 : 0) : 2 + (Math.random() < 0.6 ? 1 : 0);
   return Array.from({ length: Math.min(3, cnt + (n.layer >= 2 ? DF().extraMob[n.region] : 0)) }, () => pick(reg.pool));
 }
 async function battle(ids, kind) {
+  if (kind === 'duel' && /^m_/.test(ids[0])) (run.beat ||= []).push(ids[0]);
   const res = await combat(ids, kind);
   if (res.result === 'lose') return 'dead';
   if (res.result === 'yield') { const lv = gainExp(Math.round(15 * (1 + 0.6 * run.region))); await message(`<div class="mh">비무 패배</div>"좋은 승부였네. 다음엔 더 강해져서 오게."<br>체력이 바닥났지만 목숨은 건졌다.<br><span class="dim">경험을 조금 얻었다</span>${lv.map(x => '<br>' + x).join('')}`); return 'ok'; }
@@ -560,7 +562,7 @@ function eventApi() {
       return addItem(a || randPart());
     },
     removeCard: () => { if (run.deck.length <= 6) return ''; const basic = run.deck.filter(id => CARDS[id].school === 'samryu' || (DECKS[run.school] && DECKS[run.school].start.includes(id))); const id = pick(basic.length ? basic : run.deck); run.deck.splice(run.deck.indexOf(id), 1); return `「${CARDS[id].name}」을(를) 덜어냈다`; },
-    has: id => id in run.books, hasSchool: k => run.school === k || run.deck.some(id => CARDS[id].school === k) || Object.keys(run.books).some(id => D.BOOKS[id].school === k),
+    fresh: id => !(run.beat || []).includes(id), has: id => id in run.books, hasSchool: k => run.school === k || run.deck.some(id => CARDS[id].school === k) || Object.keys(run.books).some(id => D.BOOKS[id].school === k),
     exp: n => { const lv = gainExp(n); return `경험 +${n}` + lv.map(x => '<br>' + x).join(''); },
     pill: id => (run.pills[id] || 0) > 0, usePill: id => run.pills[id]--,
     fight: (ids, kind = 'elite') => { const el = REG()[run.region].elite; pending = () => battle(ids || [Array.isArray(el) ? pick(el) : el], kind); return '칼을 뽑았다!'; },
@@ -1020,7 +1022,7 @@ const HELP = `<div class="mh">강호 견문록</div><div style="font: 10px/12px 
 <b>보물</b>: 강적·두목을 쓰러뜨리면 플레이를 바꾸는 보물. 두목 칸에선 상대를 골라, 그 성향의 보물을 얻는다.<br>
 <b>한기·빙결</b>: 한기가 쌓이면 적이 느려지고, 차면 얼어 한 수 쉰다(쓰려던 수는 남는다). <b>독</b>: 적 차례마다 쌓인 만큼 피해, 호신을 뚫고 줄지 않는다.</div>`;
 
-if (/^(localhost|127.0.0.1)$/.test(location.hostname) || window.claude) window.SAMRYU = { get run() { return run; }, heroStats: () => heroStats(), fight: (ids, kind = 'duel') => battle(ids, kind), story: id => runEvent(STORY().find(e => e.id === id), eventApi()), tournament: () => tournament(), shop: () => shop(), chooseFoe: id => chooseFoe(id), relicPick: tag => relicPick(tag), revealCombos: () => revealCombos(), reward: (kind, ids, master) => rewardScreen(kind, ids, master), end: win => end(win) }; // 디버그·치트용
+if (/^(localhost|127.0.0.1)$/.test(location.hostname) || window.claude) window.SAMRYU = { get run() { return run; }, heroStats: () => heroStats(), pickEnemies: n => pickEnemies(n), fight: (ids, kind = 'duel') => battle(ids, kind), story: id => runEvent(STORY().find(e => e.id === id), eventApi()), tournament: () => tournament(), shop: () => shop(), chooseFoe: id => chooseFoe(id), relicPick: tag => relicPick(tag), revealCombos: () => revealCombos(), reward: (kind, ids, master) => rewardScreen(kind, ids, master), end: win => end(win) }; // 디버그·치트용
 (async () => {
   await Promise.all([...['12px G11', '12px G11B', '10px G9'].map(f => document.fonts.load(f, '삼류강호刀凶宿金奇王出武河南')), loadArt(D.ART_IDS)]);
   mapHud = el('div', 'maphud hidden', null, ui);

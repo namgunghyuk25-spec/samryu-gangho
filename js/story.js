@@ -7,7 +7,7 @@ export const STORY = [
   { id: 'sorim_gate', title: '소림 산문', face: 'b_sorim', regions: [0], story: true, arrival: [0], when: a => !a.sect,
     text: '숭산 소림사 산문 앞, 현오대사가 걸음을 멈춘다. "아미타불… 근골이 범상치 않구려. 속가제자 시험을 보겠소?"', choices: [
     { label: '천 계단 물지게 (체력 -25%)', run: a => (a.hurt(0.25), '물 한 방울 흘리지 않고 천 계단을 올랐다. 체력 -25% ' + a.joinSect('sorim')) },
-    { label: '방장께 한 수 청한다 (비무)', run: a => '"허허, 배짱 하나는 나한이로구려. 노납이 받아 보리다." ' + a.learnSim('yeokgeun', '손을 섞기 전, 대사가 숨 고르는 법 한 줄을 일러 주었다.') + ' ' + a.duel('m_sorim') },
+    { label: '방장께 한 수 청한다 (비무)', need: a => a.fresh('m_sorim'), run: a => '"허허, 배짱 하나는 나한이로구려. 노납이 받아 보리다." ' + a.learnSim('yeokgeun', '손을 섞기 전, 대사가 숨 고르는 법 한 줄을 일러 주었다.') + ' ' + a.duel('m_sorim') },
     { label: '정중히 사양한다', run: a => '"인연이 닿으면 다시 만나리다." 대사가 합장했다. ' + a.learnSim('yeokgeun', '떠나며 역근경 구결 한 줄을 일러 주었다.') } ] },
   { id: 'gaebang_join', title: '거지 방주', face: 'b_gaebang', regions: [0, 1], story: true, arrival: [0], when: a => !a.sect,
     text: '다리 밑 누더기 노인이 술병을 흔든다. "끄윽, 자네 거지 꼴이 썩 어울리는구먼! 개방에 들지 않겠나?"', choices: [
@@ -28,12 +28,12 @@ export const STORY = [
   { id: 'mudang_invite', title: '무당의 청첩', face: 'b_mudang', regions: [1], story: true, arrival: true, when: a => !a.sect,
     text: '해검지 앞, 도사들이 공손히 읍한다. "이류에 오르신 소협의 소문이 자자하오. 장문인께서 입문을 청하시오."', choices: [
     { label: '태극권 삼백 번 (체력 -20%)', run: a => (a.hurt(0.2), '해 질 녘까지 원을 그리고 또 그렸다. 체력 -20% ' + a.joinSect('mudang')) },
-    { label: '장문인과 논검한다 (비무)', run: a => '"말보다 검이 빠르겠지. 빈도가 상대하마." ' + a.duel('m_mudang') },
+    { label: '장문인과 논검한다 (비무)', need: a => a.fresh('m_mudang'), run: a => '"말보다 검이 빠르겠지. 빈도가 상대하마." ' + a.duel('m_mudang') },
     { label: '정중히 사양한다', run: () => '"무량수불. 도는 억지로 닦는 게 아니지요." 도사들이 물러났다.' } ] },
   { id: 'mudang_visit', title: '무당 논검', face: 'b_mudang', regions: [1], story: true, arrival: true, when: a => !!a.sect,
     text: '해검지에서 청허진인이 손짓한다. "타 문의 제자로구나. 빈도와 차 한잔하며 검을 논해 보겠나?"', choices: [
     { label: '검리를 논한다', run: a => '"강함은 부드러움 속에 숨어 있느니라." ' + (a.train() || a.exp(20)) },
-    { label: '진인과 겨룬다 (비무)', run: a => '"허허, 젊은 혈기로구나. 받아 주마." ' + a.duel('m_mudang') },
+    { label: '진인과 겨룬다 (비무)', need: a => a.fresh('m_mudang'), run: a => '"허허, 젊은 혈기로구나. 받아 주마." ' + a.duel('m_mudang') },
     { label: '차만 마시고 간다', run: a => (a.heal(0.2), '운무 속 차 한 잔에 기혈이 맑아진다. 체력 20% 회복') } ] },
   { id: 'jegal_guest', title: '제갈세가', face: 'y_jegal', regions: [1], story: true, when: a => !a.family,
     text: '제갈세가 정원에 팔괘진이 펼쳐져 있다. 신산 제갈운이 부채를 접는다. "이 진을 뚫으면 식객으로 모시지요."', choices: [
@@ -54,12 +54,12 @@ export const STORY = [
   { id: 'cheongseong_invite', title: '송풍림', face: 'b_cheongseong', regions: [2], story: true, arrival: true, when: a => !a.sect,
     text: '송풍림에 바람이 인다. 송학자가 솔가지 위에서 내려다본다. "일류의 기세라… 이 숲을 지나면 청성의 문을 열겠다."', choices: [
     { label: '검풍 속을 걷는다 (체력 -25%)', run: a => (a.hurt(0.25), '수백 줄기 검풍을 뚫고 숲을 나섰다. 체력 -25% ' + a.joinSect('cheongseong')) },
-    { label: '장문인께 도전한다 (비무)', run: a => '"하하! 바람을 베어 보겠다는 건가." ' + a.duel('m_cheongseong') },
+    { label: '장문인께 도전한다 (비무)', need: a => a.fresh('m_cheongseong'), run: a => '"하하! 바람을 베어 보겠다는 건가." ' + a.duel('m_cheongseong') },
     { label: '숲을 돌아간다', run: () => '"바람은 기다려 주지 않는다." 송학자가 솔바람 속에 사라졌다.' } ] },
   { id: 'cheongseong_visit', title: '청성 논검', face: 'b_cheongseong', regions: [2], story: true, arrival: true, when: a => !!a.sect,
     text: '청성산 중턱, 송학자가 차를 달인다. "타 문의 고수라도 손님은 손님이지. 검 이야기나 나눠 보세."', choices: [
     { label: '검리를 논한다', run: a => '"검은 바람처럼, 머물지 말 것." ' + (a.train() || a.exp(25)) },
-    { label: '송학자와 겨룬다 (비무)', run: a => '"좋지! 청성의 바람 맛을 보여 주마." ' + a.duel('m_cheongseong') } ] },
+    { label: '송학자와 겨룬다 (비무)', need: a => a.fresh('m_cheongseong'), run: a => '"좋지! 청성의 바람 맛을 보여 주마." ' + a.duel('m_cheongseong') } ] },
   { id: 'emei_help', title: '아미의 비구니', face: 'b_emei', regions: [2], story: true, when: a => !a.sect,
     text: '독인 무리가 비구니들을 에워쌌다. 정혜사태가 검을 뽑으며 외친다. "시주, 손을 보태 주겠소?"', choices: [
     { label: '아미 객경으로 싸운다 (전투)', run: a => '"이 싸움이 끝나면 그대는 아미의 객경이오!" ' + a.joinSect('emei') + ' ' + a.fight(['dokin', 'dokin', 'amgi'], 'normal') },
@@ -81,17 +81,17 @@ export const STORY = [
   { id: 'hwasan_elder', title: '장로의 예', face: 'b_hwasan', regions: [3], story: true, arrival: true, when: a => !a.sect,
     text: '화산 장로들이 산문에 도열했다. 운학이 포권한다. "절정고수께 제자 자리는 결례지요. 객경장로로 모시겠소."', choices: [
     { label: '매화림 연무 (체력 -15%)', run: a => (a.hurt(0.15), '검무가 끝나자 장로들이 탄성을 질렀다. 체력 -15% ' + a.joinSect('hwasan') + ' ' + a.title('화산 객경장로')) },
-    { label: '운학과 검을 나눈다 (비무)', run: a => '"좋소! 매화가 피는지 지는지 봅시다." ' + a.duel('m_hwasan') },
+    { label: '운학과 검을 나눈다 (비무)', need: a => a.fresh('m_hwasan'), run: a => '"좋소! 매화가 피는지 지는지 봅시다." ' + a.duel('m_hwasan') },
     { label: '정중히 사양한다', run: () => '"화산의 문은 늘 열려 있소." 운학이 아쉬운 듯 웃었다.' } ] },
   { id: 'hwasan_visit', title: '화산 논검', face: 'b_hwasan', regions: [3], story: true, arrival: true, when: a => !!a.sect,
     text: '연화봉 정상, 운학이 매화 아래서 검을 닦는다. "타 문의 절정고수라. 매화 피는 것이나 보고 가시겠소?"', choices: [
     { label: '매화검리를 청한다', run: a => '"매화는 추위를 견뎌야 피는 법." ' + (a.train() || a.exp(30)) },
-    { label: '운학과 겨룬다 (비무)', run: a => '"검을 뽑으시오. 매화가 지기 전에." ' + a.duel('m_hwasan') },
+    { label: '운학과 겨룬다 (비무)', need: a => a.fresh('m_hwasan'), run: a => '"검을 뽑으시오. 매화가 지기 전에." ' + a.duel('m_hwasan') },
     { label: '매화주를 얻어 마신다', run: a => (a.heal(0.25), '향기로운 매화주에 기혈이 풀린다. 체력 25% 회복') } ] },
   { id: 'jongnam_trial', title: '종남의 시험', face: 'b_jongnam', regions: [3], story: true, when: a => !a.sect,
     text: '천강석 앞에서 목진이 팔짱을 낀다. "화산만 검을 쓰는 줄 아는가? 이 돌을 들면 종남이 그대를 받겠다."', choices: [
     { label: '천강석을 든다 (체력 -25%)', run: a => (a.hurt(0.25), '핏줄이 터질 듯했지만 돌을 머리 위로 들었다. 체력 -25% ' + a.joinSect('jongnam')) },
-    { label: '목진과 겨룬다 (비무)', run: a => '"돌 대신 검이라? 그것도 좋지!" ' + a.duel('m_jongnam') },
+    { label: '목진과 겨룬다 (비무)', need: a => a.fresh('m_jongnam'), run: a => '"돌 대신 검이라? 그것도 좋지!" ' + a.duel('m_jongnam') },
     { label: '돌만 보고 떠난다', run: () => '"돌덩이 하나에 겁먹다니." 목진이 코웃음을 쳤다.' } ] },
   { id: 'hwangbo_invite', title: '황보의 혼담', face: 'b_gaebang', regions: [3], story: true, when: a => !a.family && a.realm >= 2,
     text: '비단옷 차림의 황보삼이 나타났다. "실은 내가 황보세가 망나니 숙부일세. 우리 조카딸 사위가 되어 주게!"', choices: [
@@ -101,7 +101,7 @@ export const STORY = [
   { id: 'murim_summon', title: '무림맹 초청', face: 'b_sorim', regions: [3, 4], story: true, when: a => a.realm >= 3 && a.sect !== 'magyo',
     text: '현오대사가 무림맹 영패를 들고 찾아왔다. "산문 앞의 그 삼류가 절정에 이르렀구려. 맹이 시주를 부르오."', choices: [
     { label: '영패를 받는다', run: a => (a.gold += 50, '"천하가 시주를 지켜볼 것이오." 은자 +50 ' + a.title('무림맹 신성')) },
-    { label: '그날의 비무를 청한다 (비무)', run: a => '"허허, 노납도 이날을 기다렸소이다." ' + a.duel('m_sorim') },
+    { label: '그날의 비무를 청한다 (비무)', need: a => a.fresh('m_sorim'), run: a => '"허허, 노납도 이날을 기다렸소이다." ' + a.duel('m_sorim') },
     { label: '이름은 필요 없소', run: a => '"그 마음이 곧 협이로다." 대사가 합장했다. ' + a.exp(30) } ] },
 
   // ───────── 4. 천산 ─────────
@@ -120,13 +120,13 @@ export const STORY = [
   { id: 'gonryun_hermit', title: '설봉의 은자', face: 'b_gonryun', regions: [4], story: true, when: a => !a.sect,
     text: '만년설 봉우리, 백의 노인이 구름을 밟고 선다. "곤륜의 백결이다. 여기까지 올라온 자는 십 년 만이로군."', choices: [
     { label: '빙폭 아래 좌선 (체력 -20%)', run: a => (a.hurt(0.2), '얼음 폭포 아래서 사흘을 버텼다. 체력 -20% ' + a.joinSect('gonryun')) },
-    { label: '구름 위의 검을 청한다 (비무)', run: a => '"구름을 벨 수 있다면 베어 보아라." ' + a.duel('m_gonryun') },
+    { label: '구름 위의 검을 청한다 (비무)', need: a => a.fresh('m_gonryun'), run: a => '"구름을 벨 수 있다면 베어 보아라." ' + a.duel('m_gonryun') },
     { label: '절하고 물러난다', run: a => (a.heal(0.2), '"구름은 또 만나는 법." 맑은 기운이 몸을 감싼다. 체력 20% 회복') } ] },
   { id: 'gongdong_fist', title: '칠상권 일곱 대', face: 'b_gongdong', regions: [4], story: true,
     text: '설원의 주막, 거구의 노인이 주먹을 우두둑 꺾는다. "공동의 마도원이다. 칠상권 일곱 대, 받아 낼 텐가?"', choices: [
     { label: '일곱 대를 맞는다 (체력 -30%)', run: a => (a.hurt(0.3), '일곱 번째 주먹에도 쓰러지지 않았다. 체력 -30% '
       + (a.sect ? (a.stat('atk', 3), '"근성 하나는 천하제일!" 공력 +3') : '"오늘부터 공동의 제자다!" ' + a.joinSect('gongdong'))) },
-    { label: '마도원과 겨룬다 (비무)', run: a => '"하하! 주먹엔 주먹이지!" ' + a.duel('m_gongdong') },
+    { label: '마도원과 겨룬다 (비무)', need: a => a.fresh('m_gongdong'), run: a => '"하하! 주먹엔 주먹이지!" ' + a.duel('m_gongdong') },
     { label: '술을 한잔 산다 (은자 20)', need: a => a.gold >= 20, run: a => (a.gold -= 20, a.stat('maxHp', 15), '"주먹보다 술이 낫지!" 비전 보약주를 나눠 주었다. 은자 -20, 최대체력 +15') } ] },
 
   // ───────── 이어지는 기연: 앞의 선택(칭호)이 뒤 이야기를 연다 ─────────

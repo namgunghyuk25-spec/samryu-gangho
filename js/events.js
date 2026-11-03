@@ -195,7 +195,7 @@ export const EVENTS = [
     { label: '폐관한다 (체력 -30%)', run: a => (a.hurt(0.3), '사흘 밤낮 초식을 허물고 다시 세웠다. 체력 -30%<br>' + (a.removeCard() || '버릴 초식은 없었다.') + '<br>' + (a.train() || a.give('card'))) },
     { label: '하룻밤 운기만 한다', run: a => (a.heal(0.25), '기혈을 고르며 하룻밤을 보냈다. 체력 25% 회복') } ] },
   V(s => ({ title: '명문 제자의 시비', text: a => { s.k = MASTER_SK[pickIdx(a, MASTER_SK.length)]; return `${SCHOOL[s.k]} 제자들이 길을 막고 시비를 건다. "삼류 따위가 감히!" 뒤편 가마에서 문주의 헛기침 소리가 들린다.`; }, choices: [
-    { label: '문주에게 비무를 청한다 (장문인 비무)', run: a => `가마의 발이 걷혔다. "버릇은 내가 고쳐 주지." ${SCHOOL[s.k]} 장문인이 걸어 나온다. ` + a.duel('m_' + s.k) },
+    { label: '문주에게 비무를 청한다 (장문인 비무)', need: a => a.fresh('m_' + s.k), run: a => `가마의 발이 걷혔다. "버릇은 내가 고쳐 주지." ${SCHOOL[s.k]} 장문인이 걸어 나온다. ` + a.duel('m_' + s.k) },
     { label: '사과하고 은자를 낸다 (은자 15)', need: a => a.gold >= 15, run: a => (a.gold -= 15, '"흥, 눈치는 있군." 은자 -15') },
     { label: '어깨로 밀치고 지나간다 (체력 -10%)', run: a => (a.hurt(0.1), '등 뒤에서 날아든 장풍을 맞았지만 길은 뚫었다. 체력 -10%') } ] })),
   { title: '소매치기', text: '장터 인파 속, 꾀죄죄한 아이가 부딪히더니 쏜살같이 달아난다. 허리춤이 가볍다!', choices: [

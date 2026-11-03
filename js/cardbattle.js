@@ -234,7 +234,7 @@ export class CardBattle extends Battle {
     if (cs.cloud) add('구름', '#e0f0ff', '단일 공격이 닿지 않는다 · 전체 공격과 출혈만 닿는다 · 이 적이 다음 수를 쓰면 걷힌다');
     if (cs.bud) add(`봉오리 ${cs.bud.left}·${cs.bud.t}`, '#ff90b8', `내 차례가 ${cs.bud.t}번 끝나기 전에 이 적을 공격해 피해 ${cs.bud.left}을 더 주면 깨진다 · 못 깨면 만개해 내가 ${Math.round(u.intents.find(i => i.k === 'ult').dmg * 0.8)} 피해`);
     if (cs.frozen) add('빙결', '#c8f4ff', '다음 수를 쉰다(쓰려던 수는 그대로 남는다) · 받는 피해 +25% · 쇄빙 카드로 깨면 크게 터지지만 쉬지 않고 움직인다');
-    if (cs.frost) add(`한기${cs.frost}/${this.freezeAt(u)}`, '#90d8ff', `느려진다(−${Math.min(5, cs.frost) * 8}%) · ${this.freezeAt(u)}이 차면 빙결 · 행동할 때마다 1 녹는다`);
+    if (cs.frost) add(`한기${cs.frost}/${this.freezeAt(u)}`, '#90d8ff', `느려진다(−${Math.min(4, cs.frost) * 5}%) · ${this.freezeAt(u)}이 차면 빙결 · 행동할 때마다 1 녹는다`);
     if (cs.icewall) add('빙벽', '#90d8ff', '나를 때린 적에게 한기 1 · 다음 내 차례까지');
     if (cs.tlock) add('주천 봉쇄', '#80a0ff', '다음 내 차례가 끝날 때까지 주천을 올리지 못한다');
     const ST_DESC = { poison: `이 적의 차례마다 ${cs.poison} 피해 · 호신을 뚫고 줄지 않는다`, bleed: `차례가 오면 ${cs.bleed} 피해를 입고 1 줄어든다`, weak: `${cs.weak}번 행동하는 동안 주는 피해 −25%`, vuln: `${cs.vuln}번 행동하는 동안 받는 피해 +50%` };
@@ -321,7 +321,7 @@ export class CardBattle extends Battle {
     popText(...this.top(u), `${ST_NAME[k][0]} +${n}`, k === 'bleed' ? 'dmg' : k === 'vuln' ? 'warn' : 'st');
     if (k === 'frost') this.checkFreeze(u);
   }
-  spdOf(u) { return u.spd * (u.cs && u.cs.frost ? 1 - 0.08 * Math.min(5, u.cs.frost) : 1); } // 한기: 느려진다
+  spdOf(u) { return u.spd * (u.cs && u.cs.frost ? 1 - 0.05 * Math.min(4, u.cs.frost) : 1); } // 한기: 느려진다
   freezeAt(u) { return (u.boss || u.elite || u.title || u.final || u.mid || u.duel ? 7 : 4) + 2 * ((u.cs && u.cs.frozenN) || 0); } // 강적일수록, 얼릴수록 잘 안 언다
   checkFreeze(u) {
     if (!u.alive || u.cs.frozen || u.cs.frost < this.freezeAt(u)) return;
@@ -1269,7 +1269,7 @@ export class CardBattle extends Battle {
       case 'icewall': h.cs.icewall = 1; popText(...this.center(h), '빙벽', 'st'); break;
       case 'shatter': { const u = tgt[0], f = u.cs.frozen; await this.strike(c, tgt, val(c.dmg, t) * (f ? 2.5 : 1), 1); if (f && u.alive) this.thaw(u, true); return; }
       case 'hancheon': this.cardBlock(4 + Math.min(20, this.enemies.reduce((a, u) => a + (u.cs.frost || 0), 0))); await this.selfAnim(c); return;
-      case 'bukmyeong': this.playSeq(h, 'cast'); await this.castFx(h, { vfx: c.vfx }, foes()); this.setPose(h, 'idle'); for (const u of foes()) this.addSt(u, 'frost', Math.max(2, u.cs.frost || 0)); return;
+      case 'bukmyeong': this.playSeq(h, 'cast'); await this.castFx(h, { vfx: c.vfx }, foes()); this.setPose(h, 'idle'); for (const u of foes()) this.addSt(u, 'frost', 3); return;
       case 'bingbaek': { const u = tgt[0], f = u.cs.frozen, n = u.cs.frost || 0; u.cs.frost = 0; await this.strike(c, tgt, (18 + 3 * n) * (f ? 2 : 1), 1); if (f && u.alive) this.thaw(u, true); return; }
       case 'dokbal': await this.strike(c, tgt, Math.max(1, Math.round((tgt[0].cs.poison || 0) * [1, 1.5, 2][t - 1])), 1); return;
       case 'hwagol': if (tgt[0].st.shield) { tgt[0].st.shield = 0; popText(...this.top(tgt[0]), '호신이 녹았다', 'crit'); } break;

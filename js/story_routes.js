@@ -58,7 +58,7 @@ export const ROUTE_STORY = [
   { id: 'bh_gungju', title: '내궁의 문', face: 'b_bukhae', regions: [4], story: true, mine: true, arrival: true, when: a => a.origin === 'bukhae',
     text: '천산 초입의 눈보라 속에 궁주 설무향이 서 있다. "천마 앞에 서기 전에 묻겠다. 네 얼음이 내 얼음을 깰 수 있느냐?"',
     choices: [
-      { label: '궁주에게 한 수 청한다 (비무)', run: a => (a.title('내궁의 제자'), '"좋다. 와라."<br>' + a.duel('m_bukhae')) },
+      { label: '궁주에게 한 수 청한다 (비무)', need: a => a.fresh('m_bukhae'), run: a => (a.title('내궁의 제자'), '"좋다. 와라."<br>' + a.duel('m_bukhae')) },
       { label: '예를 올리고 비결을 청한다', run: a => '궁주가 손끝으로 이마를 짚었다. 한기가 머릿속까지 맑게 했다.<br>' + a.give('card', 'bukhae') } ] },
   // ── 사천당가 외문 독수: 적통 당소소와 문중의 배신자 ──
   { id: 'dg_oath', title: '독경 한 장', face: 'y_dang', regions: [0], story: true, mine: true, arrival: [0], when: a => a.origin === 'dang',

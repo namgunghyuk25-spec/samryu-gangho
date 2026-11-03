@@ -72,7 +72,7 @@ export const CARDS = {
   bh_dongkyeol: { name: '동결진', school: 'bukhae', type: '공', cost: 2, w: 1.5, target: 'all', dmg: [4, 6, 8], stT: { frost: [1, 2, 2] }, vfx: 'ice', desc: '전체 피해 4/6/8 · 전체 한기 1/2/2' },
   bh_hancheon: { name: '한천기', school: 'bukhae', type: '수', cost: 1, w: 1, target: 'self', vfx: 'shield', special: 'hancheon', desc: '호신 4 + 모든 적의 한기 합(최대 +20)' },
   bh_mannyeon: { name: '만년빙', school: 'bukhae', type: '운', cost: 1, w: 0.5, target: 'self', retain: true, block: 4, cgBlock: 3, vfx: 'wind', special: 'mannyeon', desc: '축기 · 호신 4(손에 남을 때마다 +3) · 손에 남을 때마다 모든 적 한기 1' },
-  bh_bukmyeong: { name: '북명한풍', school: 'bukhae', type: '허', cost: 2, w: 1.5, target: 'all', exhaust: true, vfx: 'nova', main: '한기 두 배', special: 'bukmyeong', desc: '모든 적의 한기를 두 배로(최소 +2) · 내면 이번 전투에서 사라진다' },
+  bh_bukmyeong: { name: '북명한풍', school: 'bukhae', type: '허', cost: 2, w: 1.5, target: 'all', exhaust: true, vfx: 'nova', main: '전체 한기 3', special: 'bukmyeong', desc: '전체 한기 3 · 내면 이번 전투에서 사라진다' },
   bh_bingbaek: { name: '빙백신장', school: 'bukhae', type: '공', cost: 2, w: 2, target: 'one', only: 3, finisher: true, jc: 'bingbaek', vfx: 'ice', special: 'bingbaek', desc: '[3단 전용] 피해 18 + 대상 한기×3(한기를 다 쓴다) · 빙결한 적이면 두 배로 깨뜨린다 · 주천 1단으로' },
   // ── 사천당가: 독은 줄지 않고 호신을 뚫는다. 쌓아 두거나, 터뜨리거나 ──
   dg_bihwang: { name: '비황석', school: 'dang', type: '암', cost: 1, w: 1, target: 'one', dmg: [3, 4, 5], stT: { poison: [1, 1, 2] }, vfx: 'darts', desc: '피해 3/4/5 · 독 1/1/2' },
